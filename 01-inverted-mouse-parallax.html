@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Effect: Inverted Mouse Parallax</title>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+  body{
+    background:#0a0a0a;
+    color:#fff;
+    font-family:system-ui,-apple-system,sans-serif;
+    overflow:hidden;
+    height:100vh;
+  }
+
+  /* ── The scene ─────────────────────────────────── */
+  .scene{
+    position:relative;
+    width:100%;height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    perspective:1200px;
+    overflow:hidden;
+  }
+
+  /* Each layer moves at a different speed + inverted direction */
+  .layer{
+    position:absolute;
+    will-change:transform;
+    transition:none;
+  }
+
+  /* Background layer — slowest, largest */
+  .layer--bg{
+    inset:-60px;
+    background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);
+    z-index:1;
+  }
+
+  /* Mid layer — geometric shapes */
+  .layer--mid{
+    z-index:2;
+    width:100%;height:100%;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .layer--mid .shape{
+    position:absolute;
+    border-radius:50%;
+    opacity:.15;
+    filter:blur(1px);
+  }
+  .layer--mid .shape:nth-child(1){
+    width:300px;height:300px;
+    background:radial-gradient(circle,#e94560,transparent 70%);
+    top:15%;left:20%;
+  }
+  .layer--mid .shape:nth-child(2){
+    width:400px;height:400px;
+    background:radial-gradient(circle,#0f3460,transparent 70%);
+    bottom:10%;right:15%;
+  }
+  .layer--mid .shape:nth-child(3){
+    width:200px;height:200px;
+    background:radial-gradient(circle,#533483,transparent 70%);
+    top:40%;right:35%;
+  }
+
+  /* Foreground layer — text, fastest movement */
+  .layer--fg{
+    z-index:3;
+    text-align:center;
+  }
+  .layer--fg h1{
+    font-size:clamp(2rem,6vw,5rem);
+    font-weight:700;
+    letter-spacing:-.02em;
+    line-height:1.1;
+  }
+  .layer--fg p{
+    margin-top:1rem;
+    font-size:clamp(.9rem,1.5vw,1.2rem);
+    opacity:.5;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+  }
+
+  /* ── Info panel ────────────────────────────────── */
+  .info{
+    position:fixed;bottom:2rem;left:2rem;right:2rem;
+    z-index:10;
+    background:rgba(255,255,255,.06);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    padding:1.25rem 1.5rem;
+    font-size:.8rem;
+    color:rgba(255,255,255,.5);
+    line-height:1.6;
+    max-width:500px;
+  }
+  .info strong{color:rgba(255,255,255,.8)}
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <!-- Layer 1: Background gradient — moves least -->
+  <div class="layer layer--bg" data-speed="0.02"></div>
+
+  <!-- Layer 2: Mid shapes — moves moderately -->
+  <div class="layer layer--mid" data-speed="0.04">
+    <div class="shape"></div>
+    <div class="shape"></div>
+    <div class="shape"></div>
+  </div>
+
+  <!-- Layer 3: Foreground text — moves most -->
+  <div class="layer layer--fg" data-speed="0.06">
+    <h1>Your Headline Here</h1>
+    <p>Move your mouse around</p>
+  </div>
+</div>
+
+<div class="info">
+  <strong>Effect:</strong> Inverted Mouse Parallax<br>
+  <strong>Source:</strong> Shopify Editions Winter '26<br>
+  <strong>How:</strong> Mouse position normalised to -1…+1, axes inverted, applied per-layer with different speeds. Lerp (5% per frame) creates the cinematic drag.
+</div>
+
+<script>
+/*
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *  EFFECT: Inverted Mouse Parallax
+ *  Source: Shopify Editions Winter '26
+ *
+ *  How it works:
+ *  1. Mouse position is normalised to -1 … +1
+ *  2. Values are NEGATED (inverted) so the scene
+ *     moves opposite to the cursor
+ *  3. Each layer has a different speed multiplier
+ *  4. A lerp (linear interpolation) with a low
+ *     factor (0.05) smooths every frame, creating
+ *     the heavy cinematic trailing motion
+ *
+ *  To use: give elements a data-speed attribute.
+ *  Higher = more movement. Negative = same direction
+ *  as cursor instead of inverted.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ */
+
+const layers = document.querySelectorAll('.layer[data-speed]');
+
+// ── State ──
+const mouse   = { x: 0, y: 0 };   // raw normalised target (-1 to 1)
+const current = { x: 0, y: 0 };   // lerped current value
+const LERP_FACTOR = 0.05;          // 5% per frame — lower = heavier
+const MAX_PX = 60;                 // max pixel offset at speed=1
+
+// ── Normalise mouse to -1…+1, inverted ──
+window.addEventListener('pointermove', (e) => {
+  mouse.x = -(e.clientX / window.innerWidth  * 2 - 1);  // invert X
+  mouse.y =  (e.clientY / window.innerHeight * 2 - 1);   // invert Y
+});
+
+// ── Lerp utility ──
+function lerp(start, end, factor) {
+  return start + (end - start) * factor;
+}
+
+// ── Animation loop ──
+function animate() {
+  // Ease current toward target
+  current.x = lerp(current.x, mouse.x, LERP_FACTOR);
+  current.y = lerp(current.y, mouse.y, LERP_FACTOR);
+
+  // Apply to each layer based on its speed
+  for (const layer of layers) {
+    const speed = parseFloat(layer.dataset.speed);
+    const x = current.x * MAX_PX * (speed / 0.06);
+    const y = current.y * MAX_PX * (speed / 0.06);
+    layer.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  }
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
