@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>04 — Numbered List with Hover Image Preview</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #0a0a0a;
+      color: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      position: relative;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 3rem;
+    }
+    .section-label .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f5f5f5;
+    }
+    .section-label span {
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #888;
+    }
+
+    .list { position: relative; }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+      transition: opacity 0.3s;
+    }
+    .list:hover .list-item { opacity: 0.4; }
+    .list:hover .list-item:hover { opacity: 1; }
+
+    .list-num {
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 300;
+      font-style: italic;
+      color: #666;
+      transition: color 0.3s;
+      width: 180px;
+      flex-shrink: 0;
+    }
+    .list-item:hover .list-num { color: #f5f5f5; }
+
+    .list-title {
+      font-size: clamp(1.2rem, 3vw, 2.5rem);
+      font-weight: 300;
+      color: #999;
+      transition: color 0.3s;
+      flex-grow: 1;
+      text-align: right;
+    }
+    .list-item:hover .list-title { color: #f5f5f5; }
+
+    .list-arrow {
+      width: 2rem;
+      margin-left: 1.5rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .list-arrow svg {
+      width: 1.5rem;
+      height: 1.5rem;
+      stroke: #f5f5f5;
+      stroke-width: 1.5;
+      fill: none;
+      transform: translateX(-2rem);
+      transition: transform 0.3s;
+    }
+    .list-item:hover .list-arrow svg { transform: translateX(0); }
+
+    /* Floating preview image */
+    .preview {
+      position: absolute;
+      width: 280px;
+      height: 187px;
+      border-radius: 12px;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+    .preview.visible { opacity: 1; }
+    .preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="section-label">
+      <div class="dot"></div>
+      <span>Services</span>
+    </div>
+
+    <div class="list" id="list"></div>
+    <div class="preview" id="preview">
+      <img id="previewImg" src="" alt="" />
+    </div>
+  </div>
+
+  <script>
+    const items = [
+      { num: 'O1', title: 'Deep Reading', img: 'https://picsum.photos/seed/book1/480/320' },
+      { num: 'O2', title: 'Speed Sessions', img: 'https://picsum.photos/seed/book2/480/320' },
+      { num: 'O3', title: 'Focus Blocks', img: 'https://picsum.photos/seed/book3/480/320' },
+      { num: 'O4', title: 'Daily Highlights', img: 'https://picsum.photos/seed/book4/480/320' },
+      { num: 'O5', title: 'Book Clubs', img: 'https://picsum.photos/seed/book5/480/320' },
+      { num: 'O6', title: 'Reading Analytics', img: 'https://picsum.photos/seed/book6/480/320' },
+      { num: 'O7', title: 'Library Sync', img: 'https://picsum.photos/seed/book7/480/320' },
+      { num: 'O8', title: 'Habit Streaks', img: 'https://picsum.photos/seed/book8/480/320' },
+    ];
+
+    const list = document.getElementById('list');
+    const preview = document.getElementById('preview');
+    const previewImg = document.getElementById('previewImg');
+
+    items.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'list-item';
+      row.innerHTML = `
+        <span class="list-num">${item.num}/</span>
+        <span class="list-title">${item.title}</span>
+        <div class="list-arrow">
+          <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+        </div>
+      `;
+      row.addEventListener('mouseenter', () => {
+        previewImg.src = item.img;
+        preview.classList.add('visible');
+      });
+      row.addEventListener('mouseleave', () => {
+        preview.classList.remove('visible');
+      });
+      list.appendChild(row);
+    });
+
+    list.addEventListener('mousemove', (e) => {
+      const rect = list.getBoundingClientRect();
+      preview.style.left = (e.clientX - rect.left + 24) + 'px';
+      preview.style.top = (e.clientY - rect.top - 94) + 'px';
+    });
+  </script>
+</body>
+</html>
