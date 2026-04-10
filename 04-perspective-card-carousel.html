@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Effect: 3D Perspective Card Carousel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+  body{
+    background:#0a0a0a;
+    color:#fff;
+    font-family:'Outfit',system-ui,sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+
+  /* ── Carousel wrapper ─────────────────────────── */
+  .carousel{
+    position:relative;
+    width:100%;
+    height:520px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .carousel__track{
+    position:relative;
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    perspective:3000px;
+  }
+
+  /* ── Card ──────────────────────────────────────── */
+  .card{
+    position:absolute;
+    width:280px;
+    height:400px;
+    background:#161616;
+    border-radius:16px;
+    overflow:hidden;
+    cursor:pointer;
+    transition:transform 0.6s cubic-bezier(.4,.0,.2,1),
+               opacity 0.6s ease,
+               filter 0.6s ease;
+    transform-origin:center center;
+    will-change:transform;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .card::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(135deg,
+      rgba(120,80,255,.15) 0%,
+      transparent 50%);
+    z-index:1;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .6s ease;
+  }
+
+  .card.active::before{
+    opacity:1;
+  }
+
+  /* Portrait area */
+  .card__portrait{
+    flex:1;
+    background:#1e1e1e;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+  }
+
+  .card__portrait .initials{
+    font-size:3rem;
+    font-weight:700;
+    opacity:.12;
+    letter-spacing:.05em;
+    user-select:none;
+  }
+
+  .card__gradient{
+    position:absolute;
+    bottom:0;left:0;right:0;
+    height:80px;
+    background:linear-gradient(to top,#161616,transparent);
+    z-index:1;
+  }
+
+  /* Info area */
+  .card__info{
+    padding:1.25rem 1.5rem;
+    position:relative;
+    z-index:2;
+  }
+
+  .card__name{
+    font-size:1.35rem;
+    font-weight:700;
+    line-height:1.2;
+    letter-spacing:-.01em;
+  }
+
+  .card__role{
+    font-size:.8rem;
+    opacity:.45;
+    margin-top:.35rem;
+    letter-spacing:.02em;
+  }
+
+  .card__company{
+    font-size:.75rem;
+    opacity:.3;
+    margin-top:.15rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+
+  /* ── Active state — the "spotlight" ────────────── */
+  .card.active{
+    z-index:100 !important;
+    filter:brightness(1);
+  }
+
+  .card:not(.active){
+    filter:brightness(.55);
+  }
+
+  .card:not(.active):hover{
+    filter:brightness(.75);
+  }
+
+  /* ── Nav arrows ────────────────────────────────── */
+  .nav{
+    position:absolute;
+    bottom:1.5rem;
+    display:flex;
+    gap:1rem;
+    z-index:200;
+  }
+
+  .nav button{
+    width:44px;height:44px;
+    border-radius:50%;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.04);
+    color:rgba(255,255,255,.6);
+    font-size:1.1rem;
+    cursor:pointer;
+    transition:all .2s ease;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .nav button:hover{
+    background:rgba(255,255,255,.1);
+    color:#fff;
+    border-color:rgba(255,255,255,.25);
+  }
+
+  /* ── Info panel ────────────────────────────────── */
+  .info{
+    position:fixed;bottom:2rem;left:2rem;right:2rem;
+    z-index:300;
+    background:rgba(255,255,255,.06);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    padding:1.25rem 1.5rem;
+    font-size:.8rem;
+    color:rgba(255,255,255,.5);
+    line-height:1.6;
+    max-width:500px;
+  }
+  .info strong{color:rgba(255,255,255,.8)}
+</style>
+</head>
+<body>
+
+<div class="carousel">
+  <div class="carousel__track" id="track"></div>
+  <div class="nav">
+    <button id="prev" aria-label="Previous">&#8592;</button>
+    <button id="next" aria-label="Next">&#8594;</button>
+  </div>
+</div>
+
+<div class="info">
+  <strong>Effect:</strong> 3D Perspective Card Carousel ("Rolodex Spotlight")<br>
+  <strong>Source:</strong> Stripe Sessions 2026<br>
+  <strong>How:</strong> Cards in a perspective container (3000px). Side cards rotateY(±60°) and fan outward. Active card sits flat (0° rotation) in the spotlight. Click or arrow to shift — all cards re-index with smooth transitions.
+</div>
+
+<script>
+/*
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *  EFFECT: 3D Perspective Card Carousel
+ *  Source: Stripe Sessions 2026
+ *
+ *  How it works:
+ *  1. Cards are positioned absolutely in a container
+ *     with perspective: 3000px
+ *  2. The active card has rotateY(0) — face-on
+ *  3. Cards to the RIGHT rotate rotateY(60deg) and
+ *     translate progressively further right
+ *  4. Cards to the LEFT rotate rotateY(-60deg) and
+ *     translate progressively further left
+ *  5. Z-index cascades down from the centre so
+ *     cards naturally stack/overlap
+ *  6. Clicking a side card transitions it to centre
+ *     — all cards re-calculate transforms smoothly
+ *
+ *  To customise: adjust PERSPECTIVE, ROTATE_DEG,
+ *  CARD_OFFSET, and Z_STEP below.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ */
+
+// ── Config ──
+const ROTATE_DEG  = 60;    // rotation for side cards
+const CARD_OFFSET = 132;   // px between stacked side cards
+const Z_STEP      = 13;    // z-index decrement per step
+const Z_BASE      = 100;   // z-index of the active card
+
+// ── Demo data ──
+const speakers = [
+  { name: 'Patrick Collison',   role: 'Cofounder & CEO',              company: 'Stripe' },
+  { name: 'John Collison',      role: 'Cofounder & President',        company: 'Stripe' },
+  { name: 'Will Gaybrick',      role: 'President, Technology',        company: 'Stripe' },
+  { name: 'Greg Brockman',      role: 'Cofounder & President',        company: 'OpenAI' },
+  { name: 'Nat Friedman',       role: 'Investor & Entrepreneur',      company: '' },
+  { name: 'Daniel Gross',       role: 'Investor & Entrepreneur',      company: '' },
+  { name: 'Emily Sands',        role: 'Head of Data & AI',            company: 'Stripe' },
+  { name: 'Guillermo Rauch',    role: 'CEO',                          company: 'Vercel' },
+  { name: 'Kate Jensen',        role: 'Head of Americas',             company: 'Anthropic' },
+  { name: 'Kevin Miller',       role: 'Business Lead, Payments',      company: 'Stripe' },
+  { name: 'Neetika Bansal',     role: 'Head of Money Management',     company: 'Stripe' },
+];
+
+let activeIndex = 0;
+const track = document.getElementById('track');
+
+// ── Build cards ──
+const cards = speakers.map((speaker, i) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const initials = speaker.name.split(' ').map(w => w[0]).join('');
+  card.innerHTML = `
+    <div class="card__portrait">
+      <span class="initials">${initials}</span>
+      <div class="card__gradient"></div>
+    </div>
+    <div class="card__info">
+      <div class="card__name">${speaker.name}</div>
+      <div class="card__role">${speaker.role}</div>
+      ${speaker.company ? `<div class="card__company">${speaker.company}</div>` : ''}
+    </div>
+  `;
+  card.addEventListener('click', () => goTo(i));
+  track.appendChild(card);
+  return card;
+});
+
+// ── Position all cards relative to active ──
+function layout() {
+  cards.forEach((card, i) => {
+    const offset = i - activeIndex;
+    let tx, ry, z;
+
+    if (offset === 0) {
+      // Active — face on, centre
+      tx = 0;
+      ry = 0;
+      z = Z_BASE;
+    } else if (offset > 0) {
+      // Right wing — rotate clockwise, fan right
+      tx = 200 + (offset - 1) * CARD_OFFSET + CARD_OFFSET;
+      ry = ROTATE_DEG;
+      z = Z_BASE - offset * Z_STEP;
+    } else {
+      // Left wing — rotate counter-clockwise, fan left
+      tx = -200 + (offset + 1) * CARD_OFFSET - CARD_OFFSET;
+      ry = -ROTATE_DEG;
+      z = Z_BASE + offset * Z_STEP; // offset is negative
+    }
+
+    card.style.transform = `translateX(${tx}px) rotateY(${ry}deg)`;
+    card.style.zIndex = z;
+    card.classList.toggle('active', offset === 0);
+    card.style.opacity = Math.abs(offset) > 5 ? 0 : 1;
+  });
+}
+
+function goTo(index) {
+  activeIndex = Math.max(0, Math.min(index, speakers.length - 1));
+  layout();
+}
+
+// ── Nav buttons ──
+document.getElementById('prev').addEventListener('click', () => goTo(activeIndex - 1));
+document.getElementById('next').addEventListener('click', () => goTo(activeIndex + 1));
+
+// ── Keyboard ──
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft')  goTo(activeIndex - 1);
+  if (e.key === 'ArrowRight') goTo(activeIndex + 1);
+});
+
+// ── Init ──
+layout();
+</script>
+</body>
+</html>
