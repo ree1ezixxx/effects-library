@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Effect: Dual Cursor + Trailing Blob</title>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+  body{
+    background:#0a0a0a;
+    color:#fff;
+    font-family:system-ui,-apple-system,sans-serif;
+    cursor:none;
+    overflow-x:hidden;
+  }
+
+  /* ── Custom cursor — dot ───────────────────────── */
+  .cursor{
+    position:fixed;
+    top:0;left:0;
+    mix-blend-mode:difference;
+    pointer-events:none;
+    z-index:10000;
+    will-change:transform;
+    transform:translate(-100px,-100px);
+  }
+
+  .cursor__dot{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:10px;height:10px;
+    background:#fff;
+    border-radius:50%;
+    transition:width .3s,height .3s,background-color .3s;
+  }
+
+  /* Hover states — dot scales up */
+  .cursor__dot.--hover-link{
+    width:60px;height:60px;
+  }
+  .cursor__dot.--hover-button{
+    width:120px;height:120px;
+  }
+
+  /* ── Custom cursor — blob (followed) ──────────── */
+  .cursor-blob{
+    position:fixed;
+    top:0;left:0;
+    mix-blend-mode:screen;
+    pointer-events:none;
+    z-index:9999;
+    will-change:transform;
+    transform:translate(-100px,-100px);
+  }
+
+  .cursor-blob__inner{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:400px;height:400px;
+    border-radius:50%;
+    background:rgb(113,112,159);
+  }
+
+  .cursor-blob__mid{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:80%;height:80%;
+    border-radius:50%;
+    background:rgb(145,159,210);
+  }
+
+  .cursor-blob__core{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:50%;height:50%;
+    border-radius:50%;
+    background:rgb(218,210,244);
+  }
+
+  /* ── Hide on mobile ────────────────────────────── */
+  @media(max-width:992px){
+    .cursor,.cursor-blob{display:none}
+    body{cursor:auto}
+  }
+
+  /* ── Demo page content ─────────────────────────── */
+  .page{
+    min-height:200vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:6rem 2rem;
+    gap:4rem;
+  }
+
+  .hero{
+    text-align:center;
+    max-width:700px;
+    padding:8rem 0;
+  }
+  .hero h1{
+    font-size:clamp(2.5rem,6vw,5rem);
+    font-weight:700;
+    letter-spacing:-.03em;
+    line-height:1.05;
+  }
+  .hero p{
+    margin-top:1.5rem;
+    font-size:clamp(1rem,1.4vw,1.2rem);
+    color:rgba(255,255,255,.5);
+    line-height:1.7;
+  }
+
+  /* Interactive targets for hover states */
+  .links{
+    display:flex;
+    gap:2rem;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .links a{
+    color:#fff;
+    text-decoration:none;
+    font-size:1.1rem;
+    opacity:.6;
+    transition:opacity .2s;
+    padding:.5rem 0;
+    border-bottom:1px solid rgba(255,255,255,.15);
+  }
+  .links a:hover{opacity:1}
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:1rem 2.5rem;
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:60px;
+    color:#fff;
+    font-size:1rem;
+    text-decoration:none;
+    transition:background .2s,border-color .2s;
+    margin-top:1rem;
+  }
+  .btn:hover{
+    background:rgba(255,255,255,.06);
+    border-color:rgba(255,255,255,.3);
+  }
+
+  /* Dark/light sections to show blend modes */
+  .section{
+    width:100%;
+    max-width:900px;
+    padding:5rem 3rem;
+    border-radius:20px;
+    text-align:center;
+  }
+  .section--light{
+    background:#f0eeeb;
+    color:#1a1a1a;
+  }
+  .section--dark{
+    background:#161616;
+  }
+  .section h2{
+    font-size:clamp(1.5rem,3vw,2.5rem);
+    font-weight:600;
+    margin-bottom:1rem;
+  }
+  .section p{
+    font-size:1rem;
+    opacity:.6;
+    line-height:1.7;
+    max-width:500px;
+    margin-inline:auto;
+  }
+
+  /* ── Info panel ────────────────────────────────── */
+  .info{
+    position:fixed;bottom:2rem;left:2rem;right:2rem;
+    z-index:10001;
+    background:rgba(255,255,255,.06);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    padding:1.25rem 1.5rem;
+    font-size:.8rem;
+    color:rgba(255,255,255,.5);
+    line-height:1.6;
+    max-width:520px;
+    pointer-events:none;
+  }
+  .info strong{color:rgba(255,255,255,.8)}
+</style>
+</head>
+<body>
+
+<!-- ── Cursor elements ───────────────────────────── -->
+<div class="cursor" id="cursor">
+  <div class="cursor__dot" id="cursorDot"></div>
+</div>
+
+<div class="cursor-blob" id="cursorBlob">
+  <div class="cursor-blob__inner">
+    <div class="cursor-blob__mid">
+      <div class="cursor-blob__core"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Page content ──────────────────────────────── -->
+<div class="page">
+  <div class="hero">
+    <h1>Dual Cursor Effect</h1>
+    <p>A small dot tracks the mouse tightly while a large soft blob trails behind it. The dot uses mix-blend-mode: difference, the blob uses screen — watch how they interact with dark and light backgrounds.</p>
+  </div>
+
+  <nav class="links">
+    <a href="#" data-cursor="link">About Us</a>
+    <a href="#" data-cursor="link">What We Do</a>
+    <a href="#" data-cursor="link">Our Works</a>
+    <a href="#" data-cursor="link">Contact</a>
+  </nav>
+
+  <a href="#" class="btn" data-cursor="button">Get in Touch</a>
+
+  <div class="section section--light">
+    <h2>Light Surface</h2>
+    <p>The dot inverts to black on light backgrounds. The blob's screen blend makes it glow against dark areas and disappear on light ones.</p>
+  </div>
+
+  <div class="section section--dark">
+    <h2>Dark Surface</h2>
+    <p>On dark backgrounds the blob's purple gradient becomes visible, creating a soft ambient glow around the cursor.</p>
+  </div>
+</div>
+
+<div class="info">
+  <strong>Effect:</strong> Dual Cursor + Trailing Blob<br>
+  <strong>Source:</strong> QClay Design<br>
+  <strong>How:</strong> Two fixed-position elements track the mouse via lerp. The dot (fast, 0.1) uses mix-blend-mode: difference. The blob (slow, 0.04) uses mix-blend-mode: screen with concentric circles. Hover targets scale the dot via CSS transitions.
+</div>
+
+<script>
+/*
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *  EFFECT: Dual Cursor + Trailing Blob
+ *  Source: QClay Design (qclay.design)
+ *
+ *  Two cursor layers:
+ *  1. DOT — 10px white circle, mix-blend-mode:
+ *     difference, lerp 0.1 (snappy)
+ *  2. BLOB — 400px concentric purple circles,
+ *     mix-blend-mode: screen, lerp 0.04 (heavy
+ *     trailing drag)
+ *
+ *  Hover behaviour:
+ *  - [data-cursor="link"]   → dot scales to 60px
+ *  - [data-cursor="button"] → dot scales to 120px
+ *
+ *  To use: add data-cursor="link" or "button" to
+ *  any interactive element. The blob follows
+ *  automatically with no config needed.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ */
+
+const cursorEl = document.getElementById('cursor');
+const cursorDot = document.getElementById('cursorDot');
+const blobEl = document.getElementById('cursorBlob');
+
+// ── State ──
+const mouse = { x: -100, y: -100 };
+const dot   = { x: -100, y: -100 };
+const blob  = { x: -100, y: -100 };
+
+const DOT_LERP  = 0.1;    // fast — tracks closely
+const BLOB_LERP = 0.04;   // slow — heavy trailing drag
+
+// ── Lerp ──
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+// ── Mouse tracking ──
+document.addEventListener('mousemove', (e) => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+// Reset off-screen when mouse leaves the window
+document.addEventListener('mouseleave', () => {
+  mouse.x = -100;
+  mouse.y = -100;
+});
+
+// ── Hover state management ──
+function setupHoverTargets() {
+  const links   = document.querySelectorAll('[data-cursor="link"]');
+  const buttons = document.querySelectorAll('[data-cursor="button"]');
+
+  for (const el of links) {
+    el.addEventListener('mouseenter', () => cursorDot.classList.add('--hover-link'));
+    el.addEventListener('mouseleave', () => cursorDot.classList.remove('--hover-link'));
+  }
+
+  for (const el of buttons) {
+    el.addEventListener('mouseenter', () => cursorDot.classList.add('--hover-button'));
+    el.addEventListener('mouseleave', () => cursorDot.classList.remove('--hover-button'));
+  }
+}
+
+setupHoverTargets();
+
+// ── Animation loop ──
+function animate() {
+  // Lerp dot (fast)
+  dot.x = lerp(dot.x, mouse.x, DOT_LERP);
+  dot.y = lerp(dot.y, mouse.y, DOT_LERP);
+  cursorEl.style.transform = `translate3d(${dot.x}px, ${dot.y}px, 0)`;
+
+  // Lerp blob (slow)
+  blob.x = lerp(blob.x, mouse.x, BLOB_LERP);
+  blob.y = lerp(blob.y, mouse.y, BLOB_LERP);
+  blobEl.style.transform = `translate3d(${blob.x}px, ${blob.y}px, 0)`;
+
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

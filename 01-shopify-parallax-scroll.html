@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Effect: Shopify Parallax + Smooth Scroll</title>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+  body{
+    background:#0a0a0a;
+    color:#fff;
+    font-family:system-ui,-apple-system,sans-serif;
+  }
+
+  /* ── Progress bar ──────────────────────────────── */
+  .progress{
+    position:fixed;top:0;left:0;
+    width:100%;height:3px;
+    background:linear-gradient(90deg,#e94560,#533483);
+    z-index:100;
+    transform-origin:left;
+    transform:scaleX(0);
+    will-change:transform;
+  }
+
+  /* ── Hero — full viewport, mouse parallax ─────── */
+  .hero{
+    position:relative;
+    height:100vh;
+    overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    perspective:1200px;
+  }
+
+  .hero__layer{
+    position:absolute;
+    will-change:transform;
+  }
+
+  /* Background gradient — slowest mouse response */
+  .hero__bg{
+    inset:-60px;
+    background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);
+    z-index:1;
+  }
+
+  /* Mid layer — decorative orbs */
+  .hero__shapes{
+    z-index:2;
+    width:100%;height:100%;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .orb{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(40px);
+    opacity:.25;
+  }
+  .orb--1{width:500px;height:500px;background:#e94560;top:15%;left:10%}
+  .orb--2{width:600px;height:600px;background:#533483;bottom:10%;right:5%}
+  .orb--3{width:350px;height:350px;background:#0f3460;top:45%;left:50%}
+
+  /* Foreground text — fastest mouse response */
+  .hero__content{
+    position:relative;
+    z-index:3;
+    text-align:center;
+    padding:0 2rem;
+  }
+  .hero__content h1{
+    font-size:clamp(2.5rem,7vw,6rem);
+    font-weight:700;
+    letter-spacing:-.03em;
+    line-height:1;
+  }
+  .hero__content p{
+    margin-top:1.5rem;
+    font-size:clamp(1rem,1.5vw,1.25rem);
+    opacity:.5;
+    max-width:500px;
+    margin-inline:auto;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+  }
+
+  /* ── Scroll-parallax section ──────────────────── */
+  .parallax-stage{
+    position:relative;
+    height:150vh;
+    overflow:hidden;
+  }
+  .parallax-stage__layer{
+    position:absolute;
+    inset:0;
+    will-change:transform;
+  }
+  .parallax-stage__bg{
+    background:linear-gradient(180deg,#0f3460 0%,#1a1a2e 50%,#0a0a0a 100%);
+    z-index:1;
+  }
+  .parallax-stage__shapes{
+    z-index:2;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .parallax-stage__content{
+    position:relative;
+    z-index:3;
+    display:flex;align-items:center;justify-content:center;
+    height:100%;
+    text-align:center;
+    padding:0 2rem;
+  }
+  .parallax-stage__content h2{
+    font-size:clamp(2rem,5vw,4rem);
+    font-weight:700;
+    letter-spacing:-.02em;
+    line-height:1.15;
+    max-width:700px;
+  }
+
+  /* ── Content sections with scroll reveal ──────── */
+  .content{
+    position:relative;
+    z-index:5;
+    background:#0a0a0a;
+  }
+
+  .section{
+    min-height:80vh;
+    display:flex;align-items:center;justify-content:center;
+    padding:6rem 2rem;
+    border-top:1px solid rgba(255,255,255,.06);
+  }
+  .section__inner{
+    max-width:700px;
+    text-align:center;
+  }
+  .section h2{
+    font-size:clamp(1.5rem,3.5vw,3rem);
+    font-weight:700;
+    letter-spacing:-.02em;
+    margin-bottom:1.5rem;
+    opacity:0;
+    transform:translateY(40px);
+    transition:opacity .8s ease,transform .8s ease;
+  }
+  .section p{
+    font-size:clamp(1rem,1.5vw,1.2rem);
+    line-height:1.7;
+    opacity:0;
+    transform:translateY(30px);
+    transition:opacity .8s ease .15s,transform .8s ease .15s;
+    color:rgba(255,255,255,.6);
+  }
+
+  /* Revealed state */
+  .section.is-visible h2,
+  .section.is-visible p{
+    opacity:1;
+    transform:translateY(0);
+  }
+
+  /* ── Info panel ────────────────────────────────── */
+  .info{
+    position:fixed;bottom:2rem;left:2rem;right:2rem;
+    z-index:200;
+    background:rgba(255,255,255,.06);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    padding:1.25rem 1.5rem;
+    font-size:.8rem;
+    color:rgba(255,255,255,.5);
+    line-height:1.6;
+    max-width:520px;
+  }
+  .info strong{color:rgba(255,255,255,.8)}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ════════════════════════════════════════════════
+     ZONE 1 — Hero with inverted mouse parallax
+     ════════════════════════════════════════════════ -->
+<div class="hero">
+  <div class="hero__layer hero__bg" data-mouse-speed="0.02"></div>
+  <div class="hero__layer hero__shapes" data-mouse-speed="0.04">
+    <div class="orb orb--1"></div>
+    <div class="orb orb--2"></div>
+    <div class="orb orb--3"></div>
+  </div>
+  <div class="hero__layer hero__content" data-mouse-speed="0.06">
+    <h1>Your Headline Here</h1>
+    <p>Move your mouse &middot; then scroll down</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ZONE 2 — Scroll-linked parallax layers
+     ════════════════════════════════════════════════ -->
+<div class="parallax-stage">
+  <div class="parallax-stage__layer parallax-stage__bg" data-parallax-speed="0.2"></div>
+  <div class="parallax-stage__layer parallax-stage__shapes" data-parallax-speed="0.4">
+    <div class="orb orb--2" style="top:30%;left:20%"></div>
+    <div class="orb orb--1" style="bottom:20%;right:15%"></div>
+  </div>
+  <div class="parallax-stage__content" data-parallax-speed="0.7">
+    <h2>Each layer scrolls at a different speed, creating depth from flat elements</h2>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ZONE 3 — Content sections with scroll reveal
+     ════════════════════════════════════════════════ -->
+<div class="content">
+  <section class="section">
+    <div class="section__inner">
+      <h2>Smooth Scroll</h2>
+      <p>Lenis replaces native scroll with lerp-based interpolation. The page glides instead of snapping — momentum carries through after you stop.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__inner">
+      <h2>Mouse Parallax</h2>
+      <p>In the hero, mouse position is normalised to &minus;1…+1, inverted, and applied per-layer with different speed multipliers. A 5% lerp per frame creates the cinematic drag.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__inner">
+      <h2>Scroll Parallax</h2>
+      <p>Below the hero, each layer's translateY is scroll position multiplied by a speed factor. Lower speed means less movement — the layer appears further away.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__inner">
+      <h2>Scroll Reveal</h2>
+      <p>IntersectionObserver adds a visibility class as sections enter the viewport. CSS transitions handle the fade-up — no animation library needed.</p>
+    </div>
+  </section>
+</div>
+
+<div class="info">
+  <strong>Effect:</strong> Parallax + Smooth Scroll (combined)<br>
+  <strong>Source:</strong> Shopify Editions Winter '26<br>
+  <strong>Combines:</strong> Inverted mouse parallax · Lenis smooth scroll · Scroll-linked parallax layers · Scroll reveal
+</div>
+
+<script type="module">
+/*
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *  COMBINED EFFECT
+ *  Source: Shopify Editions Winter '26
+ *
+ *  Three techniques in one page:
+ *  1. Inverted mouse parallax (hero)
+ *  2. Lenis smooth scroll (whole page)
+ *  3. Scroll-linked parallax layers (mid section)
+ *  4. Scroll reveal via IntersectionObserver
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ */
+
+import Lenis from 'https://cdn.jsdelivr.net/npm/lenis@1.3.18/+esm';
+
+// ── Shared lerp ──
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+// ════════════════════════════════════════════════
+// 1. LENIS — smooth scroll engine
+// ════════════════════════════════════════════════
+
+const lenis = new Lenis({
+  lerp: 0.08,
+  smoothWheel: true,
+  smoothTouch: false,
+});
+
+const progressBar = document.getElementById('progress');
+
+lenis.on('scroll', ({ progress }) => {
+  progressBar.style.transform = `scaleX(${progress})`;
+});
+
+// ════════════════════════════════════════════════
+// 2. INVERTED MOUSE PARALLAX (hero only)
+// ════════════════════════════════════════════════
+
+const mouseLayers = document.querySelectorAll('[data-mouse-speed]');
+const mouse   = { x: 0, y: 0 };
+const mCurr   = { x: 0, y: 0 };
+const MOUSE_LERP = 0.05;
+const MOUSE_MAX  = 60;    // max px offset at speed=1
+
+window.addEventListener('pointermove', (e) => {
+  mouse.x = -(e.clientX / window.innerWidth  * 2 - 1);
+  mouse.y =  (e.clientY / window.innerHeight * 2 - 1);
+});
+
+// ════════════════════════════════════════════════
+// 3. SCROLL-LINKED PARALLAX (parallax-stage)
+// ════════════════════════════════════════════════
+
+const scrollLayers = document.querySelectorAll('[data-parallax-speed]');
+let scrollTarget = 0;
+let scrollCurrent = 0;
+const SCROLL_LERP = 0.08;
+
+// ════════════════════════════════════════════════
+// 4. SCROLL REVEAL
+// ════════════════════════════════════════════════
+
+const sections = document.querySelectorAll('.section');
+const observer = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+      }
+    }
+  },
+  { threshold: 0.2 }
+);
+for (const s of sections) observer.observe(s);
+
+// ════════════════════════════════════════════════
+// UNIFIED ANIMATION LOOP
+// ════════════════════════════════════════════════
+
+function animate(time) {
+  lenis.raf(time);
+
+  // Mouse parallax
+  mCurr.x = lerp(mCurr.x, mouse.x, MOUSE_LERP);
+  mCurr.y = lerp(mCurr.y, mouse.y, MOUSE_LERP);
+
+  for (const layer of mouseLayers) {
+    const speed = parseFloat(layer.dataset.mouseSpeed);
+    const x = mCurr.x * MOUSE_MAX * (speed / 0.06);
+    const y = mCurr.y * MOUSE_MAX * (speed / 0.06);
+    layer.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  }
+
+  // Scroll parallax
+  scrollTarget = window.scrollY;
+  scrollCurrent = lerp(scrollCurrent, scrollTarget, SCROLL_LERP);
+
+  for (const layer of scrollLayers) {
+    const speed = parseFloat(layer.dataset.parallaxSpeed);
+    const offset = scrollCurrent * speed;
+    layer.style.transform = `translate3d(0, ${-offset}px, 0)`;
+  }
+
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
