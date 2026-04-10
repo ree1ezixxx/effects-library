@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Effect: Scroll Text Reveal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+      min-height: 100dvh;
+    }
+
+    /* ── Spacer to enable scrolling ── */
+    .spacer { height: 60vh; }
+
+    /* ── Reveal section ── */
+    .reveal-section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 10vh 2rem 40vh;
+    }
+
+    .reveal-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+      margin-bottom: 3rem;
+    }
+
+    .reveal-heading {
+      font-size: clamp(2.5rem, 7vw, 6rem);
+      font-weight: 600;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    /* ── Scroll line structure ── */
+    .scroll-line {
+      display: block;
+    }
+
+    .scroll-line-content {
+      display: inline-flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scroll-line-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 115%;
+      background: #0a0a0a;
+      transform-origin: 100% 50%;
+      transform: scaleX(1);
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+      pointer-events: none;
+    }
+
+    .scroll-line.revealed .scroll-line-mask {
+      transform: scaleX(0);
+    }
+
+    /* Dim text visible through the mask gap */
+    .scroll-line .dim {
+      color: rgba(255, 255, 255, 0.15);
+    }
+
+    .scroll-line.revealed .dim {
+      color: rgba(255, 255, 255, 0.4);
+      transition: color 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ── Variant: light background section ── */
+    .reveal-section--light {
+      background: #f8f8f6;
+      padding: 16vh 2rem 40vh;
+      margin-top: 10vh;
+      border-radius: 2rem 2rem 0 0;
+    }
+
+    .reveal-section--light .reveal-label { color: rgba(0, 0, 0, 0.3); }
+    .reveal-section--light .reveal-heading { color: #18181b; }
+    .reveal-section--light .scroll-line-mask { background: #f8f8f6; }
+    .reveal-section--light .scroll-line .dim { color: rgba(0, 0, 0, 0.15); }
+    .reveal-section--light .scroll-line.revealed .dim { color: rgba(0, 0, 0, 0.35); }
+
+    /* ── Info panel ── */
+    .info {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.5);
+      max-width: 340px;
+      z-index: 100;
+    }
+
+    .info strong { color: rgba(255, 255, 255, 0.8); }
+  </style>
+</head>
+<body>
+
+  <div class="spacer"></div>
+
+  <!-- Dark variant -->
+  <div class="reveal-section">
+    <div class="reveal-label">Manifesto</div>
+    <div class="reveal-heading" id="dark-heading"></div>
+  </div>
+
+  <!-- Light variant -->
+  <div class="reveal-section reveal-section--light">
+    <div class="reveal-label">Our Vision</div>
+    <div class="reveal-heading" id="light-heading"></div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="info">
+    <strong>Effect:</strong> Scroll Text Reveal<br>
+    <strong>Source:</strong> monopo.vn<br>
+    <strong>How:</strong> Each line has an opaque mask overlay (same color as bg). On scroll into viewport, <code>scaleX(0)</code> from <code>transform-origin: 100% 50%</code> peels the mask away right-to-left, revealing text. Staggered per line via <code>transition-delay</code>. Uses IntersectionObserver, no scroll library required.
+  </div>
+
+  <script>
+    /* ── Config ── */
+    const STAGGER_MS = 150;
+    const ROOT_MARGIN = '-80px';
+
+    const DARK_LINES = [
+      { text: 'We integrate,', dim: false },
+      { text: 'collaborate, and', dim: false },
+      { text: 'challenge.', dim: false },
+      { text: 'We are digital natives', dim: true },
+      { text: 'embracing the', dim: true },
+      { text: 'creative freedom to', dim: true },
+      { text: 'produce solutions', dim: true },
+      { text: 'that connect,', dim: true },
+      { text: 'communicate,', dim: true },
+      { text: 'and inspire.', dim: true },
+    ];
+
+    const LIGHT_LINES = [
+      { text: 'Pioneering', dim: false },
+      { text: 'ideas for minds', dim: true },
+      { text: 'that create, build,', dim: true },
+      { text: 'and inspire.', dim: true },
+    ];
+
+    /* ── Build lines ── */
+    function buildLines(container, lines) {
+      lines.forEach((line, i) => {
+        const span = document.createElement('span');
+        span.className = 'scroll-line';
+
+        const content = document.createElement('span');
+        content.className = 'scroll-line-content';
+
+        const text = document.createElement('span');
+        text.textContent = line.text;
+        if (line.dim) text.className = 'dim';
+
+        const mask = document.createElement('span');
+        mask.className = 'scroll-line-mask';
+        mask.style.transitionDelay = `${i * STAGGER_MS}ms`;
+
+        content.appendChild(text);
+        content.appendChild(mask);
+        span.appendChild(content);
+        container.appendChild(span);
+      });
+    }
+
+    buildLines(document.getElementById('dark-heading'), DARK_LINES);
+    buildLines(document.getElementById('light-heading'), LIGHT_LINES);
+
+    /* ── Observer ── */
+    const observer = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, {
+      root: null,
+      rootMargin: ROOT_MARGIN,
+      threshold: 0
+    });
+
+    document.querySelectorAll('.scroll-line').forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>
