@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Effect: Monopo Blob Cursor</title>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+  body{
+    background:#0a0a0a;
+    color:#fff;
+    font-family:'Geist',system-ui,-apple-system,sans-serif;
+    cursor:none;
+    overflow-x:hidden;
+    min-height:200vh;
+  }
+
+  /* ── Blob cursor ──────────────────────────────────── */
+  .blob-cursor{
+    position:fixed;
+    top:50%;left:50%;
+    width:10vw;height:10vw;
+    border-radius:50%;
+    background:#fff;
+    pointer-events:none;
+    z-index:9999;
+    will-change:transform;
+    transform:translate3d(-50%,-50%,0) scale(0.075);
+    transform-origin:center;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    transition:background .6s cubic-bezier(.19,1,.22,1),
+              opacity .6s linear;
+    opacity:0;
+  }
+
+  .blob-cursor span{
+    position:absolute;
+    display:block;
+    color:#000;
+    font-size:.83vw;
+    line-height:1;
+    font-weight:500;
+    letter-spacing:-.01em;
+    opacity:0;
+    transform:translate3d(-50%,0,0) scale3d(0,0,0);
+    transform-origin:center;
+    transition:transform .8s cubic-bezier(.19,1,.22,1) .15s,
+              opacity .4s ease;
+    white-space:nowrap;
+  }
+
+  .blob-cursor svg{
+    width:1.6vw;height:1.6vw;
+    opacity:0;
+    transform:scale3d(0,0,0);
+    transform-origin:center;
+    transition:transform .8s cubic-bezier(.19,1,.22,1) .15s,
+              opacity .4s ease;
+  }
+
+  /* ── Invert on light sections ─────────────────────── */
+  body.light-section .blob-cursor{
+    background:#000;
+  }
+  body.light-section .blob-cursor span{
+    color:#fff;
+  }
+
+  /* ── Demo layout ──────────────────────────────────── */
+  .hero{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    gap:2rem;
+    padding:0 4vw;
+  }
+
+  .hero h1{
+    font-size:clamp(2rem,6vw,5.5rem);
+    font-weight:600;
+    letter-spacing:-.03em;
+    line-height:1;
+    text-align:center;
+  }
+
+  .hero p{
+    font-size:clamp(.9rem,1.2vw,1.1rem);
+    color:rgba(255,255,255,.5);
+    max-width:32ch;
+    text-align:center;
+    line-height:1.5;
+  }
+
+  /* ── Project cards ────────────────────────────────── */
+  .projects{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:2vw;
+    padding:4vw;
+  }
+
+  .project-card{
+    position:relative;
+    aspect-ratio:16/10;
+    border-radius:1rem;
+    overflow:hidden;
+    background:#161616;
+  }
+
+  .project-card img{
+    width:100%;height:100%;
+    object-fit:cover;
+    opacity:.7;
+    transition:opacity .6s ease, transform 1.2s cubic-bezier(.19,1,.22,1);
+  }
+
+  .project-card:hover img{
+    opacity:1;
+    transform:scale(1.04);
+  }
+
+  .project-card .label{
+    position:absolute;
+    bottom:1.5vw;left:1.5vw;
+    font-size:clamp(.75rem,1vw,.95rem);
+    font-weight:500;
+    color:#fff;
+    opacity:.7;
+  }
+
+  /* ── Video banner ─────────────────────────────────── */
+  .video-banner{
+    margin:4vw;
+    aspect-ratio:16/9;
+    border-radius:1rem;
+    overflow:hidden;
+    background:#111;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .video-banner img{
+    width:100%;height:100%;
+    object-fit:cover;
+    opacity:.6;
+  }
+
+  /* ── Links row ────────────────────────────────────── */
+  .links{
+    display:flex;
+    gap:3vw;
+    justify-content:center;
+    padding:6vw 4vw;
+  }
+
+  .links a{
+    color:#fff;
+    text-decoration:none;
+    font-size:clamp(.85rem,1vw,1rem);
+    opacity:.5;
+    transition:opacity .3s;
+    cursor:none;
+  }
+
+  .links a:hover{
+    opacity:1;
+  }
+</style>
+</head>
+<body>
+
+<!-- Blob cursor -->
+<div class="blob-cursor">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="7" y1="17" x2="17" y2="7"></line>
+    <polyline points="7 7 17 7 17 17"></polyline>
+  </svg>
+  <span></span>
+</div>
+
+<!-- Demo content -->
+<section class="hero">
+  <h1>Monopo Blob Cursor</h1>
+  <p>Smooth lerp-tracked cursor blob that reacts to project cards, video areas and links — extracted from monopo.vn</p>
+</section>
+
+<section class="projects">
+  <div class="project-card" data-cursor="project">
+    <img src="https://picsum.photos/seed/monopo1/800/500" alt="">
+    <div class="label">Project Alpha</div>
+  </div>
+  <div class="project-card" data-cursor="project">
+    <img src="https://picsum.photos/seed/monopo2/800/500" alt="">
+    <div class="label">Project Beta</div>
+  </div>
+  <div class="project-card" data-cursor="project">
+    <img src="https://picsum.photos/seed/monopo3/800/500" alt="">
+    <div class="label">Project Gamma</div>
+  </div>
+  <div class="project-card" data-cursor="project">
+    <img src="https://picsum.photos/seed/monopo4/800/500" alt="">
+    <div class="label">Project Delta</div>
+  </div>
+</section>
+
+<div class="video-banner" data-cursor="video">
+  <img src="https://picsum.photos/seed/monopovid/1600/900" alt="">
+</div>
+
+<div class="links">
+  <a href="#" data-cursor="hide">Instagram</a>
+  <a href="#" data-cursor="hide">Behance</a>
+  <a href="#" data-cursor="hide">Twitter</a>
+  <a href="#" data-cursor="hide">Contact</a>
+</div>
+
+<script>
+/* ──────────────────────────────────────────────────────
+   Monopo-style blob cursor
+
+   Behaviour:
+   - Small white dot (scale 0.075) follows mouse with lerp
+   - Expands to full blob on project cards (shows arrow icon)
+   - Expands on video areas (shows "Play" label)
+   - Hides on links (scale → 0)
+   - Inverts color on light backgrounds
+
+   Source: monopo.vn — rebuilt as standalone vanilla JS + GSAP
+   ────────────────────────────────────────────────────── */
+
+const LERP = 0.15;
+const DURATION = 0.6;
+
+function lerp(a, b, t) {
+  return a * (1 - t) + b * t;
+}
+
+const blob = document.querySelector('.blob-cursor');
+const blobSpan = blob.querySelector('span');
+const blobSvg = blob.querySelector('svg');
+
+const state = {
+  mouseX: window.innerWidth * 0.5,
+  mouseY: window.innerHeight * 0.5,
+  x: window.innerWidth * 0.5,
+  y: window.innerHeight * 0.5,
+  scale: 0.075,
+  targetScale: 0.075,
+  w: blob.getBoundingClientRect().width,
+  h: blob.getBoundingClientRect().height,
+};
+
+/* ── Mouse tracking ─────────────────────────────────── */
+document.addEventListener('mousemove', (e) => {
+  state.mouseX = e.pageX;
+  state.mouseY = e.pageY;
+
+  const hide = e.target.closest('[data-cursor="hide"]');
+  blob.style.opacity = hide ? '0' : '1';
+});
+
+document.addEventListener('mouseenter', () => { blob.style.opacity = '1'; });
+document.addEventListener('mouseleave', () => { blob.style.opacity = '0'; });
+
+/* ── Hover zones ────────────────────────────────────── */
+document.querySelectorAll('[data-cursor="project"]').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    state.targetScale = 0.75;
+    blobSvg.style.transform = 'scale3d(1,1,1) rotate(-45deg)';
+    blobSvg.style.opacity = '1';
+    blobSpan.style.transform = 'translate3d(-50%,0,0) scale3d(0,0,0)';
+    blobSpan.style.opacity = '0';
+    blobSpan.textContent = '';
+  });
+  el.addEventListener('mouseleave', () => {
+    state.targetScale = 0.075;
+    blobSvg.style.transform = 'scale3d(0,0,0)';
+    blobSvg.style.opacity = '0';
+  });
+});
+
+document.querySelectorAll('[data-cursor="video"]').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    state.targetScale = 1;
+    blobSpan.textContent = 'Play';
+    blobSpan.style.transform = 'translate3d(-50%,0,0) scale3d(1,1,1)';
+    blobSpan.style.opacity = '1';
+    blobSvg.style.transform = 'scale3d(0,0,0)';
+    blobSvg.style.opacity = '0';
+  });
+  el.addEventListener('mouseleave', () => {
+    state.targetScale = 0.075;
+    blobSpan.style.transform = 'translate3d(-50%,0,0) scale3d(0,0,0)';
+    blobSpan.style.opacity = '0';
+    blobSpan.textContent = '';
+  });
+});
+
+document.querySelectorAll('[data-cursor="hide"]').forEach(el => {
+  el.addEventListener('mouseenter', () => { state.targetScale = 0; });
+  el.addEventListener('mouseleave', () => { state.targetScale = 0.075; });
+});
+
+/* ── Animation loop ─────────────────────────────────── */
+function update() {
+  state.x = lerp(state.x, state.mouseX, LERP);
+  state.y = lerp(state.y, state.mouseY, LERP);
+  state.scale = lerp(state.scale, state.targetScale, LERP);
+
+  const tx = state.x - state.w * 0.5 - window.innerWidth * 0.5;
+  const ty = state.y - state.h * 0.5 - window.innerHeight * 0.5;
+
+  blob.style.transform =
+    `translate3d(${tx}px, ${ty}px, 0) scale3d(${state.scale}, ${state.scale}, 1)`;
+
+  requestAnimationFrame(update);
+}
+
+/* ── Init ───────────────────────────────────────────── */
+requestAnimationFrame(() => {
+  blob.style.opacity = '1';
+  update();
+});
+</script>
+</body>
+</html>
