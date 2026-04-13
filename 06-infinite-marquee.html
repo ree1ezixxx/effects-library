@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Effect: Infinite Marquee (pause-on-hover)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@200,300,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --ink: #0a0a0a; --mute: rgba(165,165,165,0.45); --bright: #F2F2F2; }
+    html, body { background: var(--ink); color: #A5A5A5; min-height: 100dvh; }
+    body {
+      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+      display: grid; place-items: center; padding: 6vh 0;
+    }
+
+    .wrap { max-width: 1200px; width: 100%; padding: 0 1.5rem; }
+    .lbl  {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      letter-spacing: 0.3em; text-transform: uppercase; color: var(--mute);
+      margin-bottom: 1.25rem;
+    }
+
+    /* ---------- Section frame ---------- */
+    .beam {
+      position: relative;
+      border-top: 1px solid rgba(165,165,165,0.12);
+      border-bottom: 1px solid rgba(165,165,165,0.12);
+      padding: 2rem 0;
+      display: flex; align-items: center; gap: 2.5rem;
+    }
+    .beam-eyebrow {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      letter-spacing: 0.3em; text-transform: uppercase; color: var(--mute);
+      shrink: 0; white-space: nowrap; padding-left: 1rem;
+    }
+
+    /* ---------- Marquee mechanism ---------- */
+    .marquee-wrap {
+      position: relative; flex: 1; overflow: hidden;
+      /* Edge fade so the loop seam never sits against the viewport edge */
+      mask-image: linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%);
+    }
+    .marquee {
+      display: flex; gap: 4rem;
+      width: max-content;
+      animation: scroll-x 40s linear infinite;
+      /* Slow-down on hover — eased via transition */
+      animation-play-state: running;
+    }
+    /* Pause (or slow) when the user hovers the wrap */
+    .marquee-wrap:hover .marquee { animation-play-state: paused; }
+    @keyframes scroll-x {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); } /* half = one full set, second set fills the gap */
+    }
+
+    .mk-item {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      color: rgba(165,165,165,0.45);
+      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 0.75rem;
+      text-decoration: none;
+      transition: color 0.4s ease;
+    }
+    .mk-item:hover { color: var(--bright); }
+    .mk-dot {
+      width: 3px; height: 3px; border-radius: 999px;
+      background: rgba(165,165,165,0.3);
+      transition: background 0.4s ease, transform 0.4s ease;
+    }
+    .mk-item:hover .mk-dot { background: var(--bright); transform: scale(1.6); }
+
+    /* ---------- Info panel ---------- */
+    .info {
+      position: fixed; bottom: 1.5rem; left: 1.5rem;
+      background: rgba(255,255,255,0.04); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 0.75rem;
+      padding: 1rem 1.25rem; font-size: 0.8rem; line-height: 1.55;
+      color: rgba(255,255,255,0.55); max-width: 340px;
+    }
+    .info strong { color: rgba(255,255,255,0.85); }
+    .info code { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #cdddff; }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="lbl">06 — Infinite Marquee · pause-on-hover</div>
+
+  <!-- Variant 1: with fixed eyebrow label + logo strip -->
+  <section class="beam">
+    <span class="beam-eyebrow">Trusted by · 12 cities</span>
+    <div class="marquee-wrap">
+      <div class="marquee" id="track-a"></div>
+    </div>
+  </section>
+
+  <div style="height: 6vh"></div>
+
+  <!-- Variant 2: standalone marquee with longer items -->
+  <section class="beam">
+    <div class="marquee-wrap" style="flex: 1">
+      <div class="marquee" id="track-b" style="animation-duration: 55s"></div>
+    </div>
+  </section>
+</div>
+
+<div class="info">
+  <strong>Effect:</strong> Infinite marquee w/ pause-on-hover<br/>
+  <strong>Mechanism:</strong> Duplicate the item set inside the track. Animate <code>transform: translateX(0 → -50%)</code> with a linear loop — when the first set exits, the second set sits in its place, so the viewer sees a seamless loop. <code>animation-play-state: paused</code> on wrap-hover halts the motion. CSS <code>mask-image</code> fades the loop seam at both edges. No JS animation — CSS only.
+</div>
+
+<script>
+  const ITEMS_A = [
+    'Meridian Works', 'Halcyon Atelier', 'Field & Form', 'Ostlund Studio',
+    'Penumbra Co.', 'Auric Survey', 'Lindqvist Partners', 'North of Zero',
+  ];
+  const ITEMS_B = [
+    'New York', 'London', 'Oslo', 'Tokyo', 'Berlin', 'Copenhagen', 'Zurich', 'Reykjavík',
+  ];
+  function fill(track, items) {
+    const make = () => items.map((txt) => {
+      const a = document.createElement('a');
+      a.href = '#';
+      a.className = 'mk-item';
+      a.innerHTML = `<span class="mk-dot"></span><span>${txt}</span>`;
+      return a;
+    });
+    // Duplicate set — required for the seamless translateX(-50%) loop.
+    [...make(), ...make()].forEach(el => track.appendChild(el));
+  }
+  fill(document.getElementById('track-a'), ITEMS_A);
+  fill(document.getElementById('track-b'), ITEMS_B);
+</script>
+
+</body>
+</html>
