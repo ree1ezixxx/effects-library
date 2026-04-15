@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>10 — Image Accordion · Effects Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,300;9..144,1,300&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<!--
+  Effect: Image Accordion (Expanding Panels)
+  Technique:
+    - CSS Grid with custom property --accordion-cols driving grid-template-columns.
+    - Active panel gets 2.6fr, inactive panels get 0.8fr.
+    - Transition on grid-template-columns with cubic-bezier(.2,.8,.2,1) ~900ms.
+    - Inactive panel shows a vertical rotated name label (writing-mode: vertical-rl + rotate(180deg)).
+    - Active panel fades in horizontal meta (number, title, price, arrow CTA), hides vertical label.
+    - Image stays desaturated on inactive, saturates + scales to 1 on hover.
+  Zero dependencies. Pure CSS + ~15 lines of JS.
+-->
+<style>
+  :root {
+    --paper: #f5f1ea;
+    --paper-2: #ebe5da;
+    --ink: #1a1915;
+    --ink-40: rgba(26,25,21,0.42);
+    --accent: #c2532a;
+    --edge: rgba(26,25,21,0.10);
+    --accordion-cols: 2.6fr 0.8fr 0.8fr 0.8fr 0.8fr;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+    padding: 80px 48px;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .head { max-width: 1760px; margin: 0 auto 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: end; }
+  .head h1 { font-family: 'Fraunces', serif; font-weight: 300; font-size: clamp(44px, 5vw, 80px); letter-spacing: -0.03em; line-height: 1; max-width: 14ch; }
+  .head h1 em { font-style: italic; color: var(--accent); }
+  .head .kicker { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+  .head p { font-size: 15px; color: rgba(26,25,21,0.7); line-height: 1.55; max-width: 44ch; }
+
+  .accordion {
+    display: grid;
+    grid-template-columns: var(--accordion-cols);
+    gap: 12px;
+    height: 72vh; min-height: 520px;
+    max-width: 1760px; margin: 0 auto;
+    transition: grid-template-columns .9s cubic-bezier(.2,.8,.2,1);
+  }
+  .slat {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    cursor: pointer;
+    background: var(--paper-2);
+    isolation: isolate;
+  }
+  .slat img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover;
+    transform: scale(1.08);
+    transition: transform 1.4s cubic-bezier(.2,.7,.1,1), filter .6s ease;
+    filter: saturate(0.82) brightness(0.95);
+    will-change: transform;
+  }
+  .slat::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.65) 100%);
+  }
+  .slat:hover img,
+  .slat[data-active="true"] img { transform: scale(1); filter: saturate(1) brightness(1); }
+
+  .slat__num {
+    position: absolute; top: 18px; left: 18px; z-index: 2;
+    font-size: 11px; letter-spacing: 0.18em; color: #fff; opacity: 0.8;
+  }
+  .slat__name {
+    position: absolute; left: 18px; bottom: 18px; z-index: 2;
+    color: #fff;
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-size: clamp(22px, 2vw, 34px); letter-spacing: -0.01em;
+    writing-mode: vertical-rl; transform: rotate(180deg); transform-origin: bottom left;
+    white-space: nowrap;
+  }
+  .slat[data-active="true"] .slat__name,
+  .slat:hover .slat__name { display: none; }
+
+  .slat__meta {
+    position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 2;
+    display: flex; justify-content: space-between; align-items: end; gap: 16px;
+    color: #fff;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity .5s ease .1s, transform .5s cubic-bezier(.2,.7,.1,1) .1s;
+    pointer-events: none;
+  }
+  .slat[data-active="true"] .slat__meta,
+  .slat:hover .slat__meta { opacity: 1; transform: none; }
+  .slat__meta small { display: block; font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.82; margin-bottom: 6px; }
+  .slat__meta h3 { font-family: 'Fraunces', serif; font-weight: 300; font-size: clamp(26px, 2.4vw, 42px); letter-spacing: -0.02em; line-height: 1; }
+  .slat__price { text-align: right; font-size: 12.5px; line-height: 1.4; opacity: 0.9; white-space: nowrap; }
+  .slat__arrow {
+    display: inline-grid; place-items: center;
+    width: 42px; height: 42px; border-radius: 999px;
+    background: var(--accent); color: #fff; margin-top: 8px;
+    transition: transform .35s cubic-bezier(.2,.7,.1,1);
+  }
+  .slat:hover .slat__arrow,
+  .slat[data-active="true"] .slat__arrow { transform: rotate(-45deg); }
+
+  @media (max-width: 900px) {
+    body { padding: 40px 20px; }
+    .head { grid-template-columns: 1fr; gap: 20px; }
+    .accordion { grid-template-columns: 1fr !important; grid-auto-rows: 52vh; height: auto; gap: 10px; }
+    .slat__name { writing-mode: horizontal-tb; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="head">
+  <div>
+    <span class="kicker">10 — Image Accordion</span>
+    <h1 style="margin-top:16px">Expanding panels.<br><em>Quietly.</em></h1>
+  </div>
+  <p>Five horizontal slats. Hover any one and it expands to ~3× its resting width while the others collapse to a sliver that shows only a rotated vertical label. Driven by a CSS custom property on grid-template-columns — no canvas, no JS animations, no libraries.</p>
+</header>
+
+<div class="accordion" id="accordion">
+  <a href="#" class="slat" data-active="true" data-i="0">
+    <img src="https://picsum.photos/seed/accordion-one/1200/1600" alt="">
+    <span class="slat__num">N°01</span>
+    <div class="slat__name">Perch</div>
+    <div class="slat__meta">
+      <div><small>Studio · 240 sq ft</small><h3>Perch</h3></div>
+      <div class="slat__price">from<br>$96,000<div class="slat__arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 12L12 2M5 2h7v7" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></div></div>
+    </div>
+  </a>
+  <a href="#" class="slat" data-i="1">
+    <img src="https://picsum.photos/seed/accordion-two/1200/1600" alt="">
+    <span class="slat__num">N°02</span>
+    <div class="slat__name">Cove</div>
+    <div class="slat__meta">
+      <div><small>Studio + · 360 sq ft</small><h3>Cove</h3></div>
+      <div class="slat__price">from<br>$118,000<div class="slat__arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 12L12 2M5 2h7v7" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></div></div>
+    </div>
+  </a>
+  <a href="#" class="slat" data-i="2">
+    <img src="https://picsum.photos/seed/accordion-three/1200/1600" alt="">
+    <span class="slat__num">N°03</span>
+    <div class="slat__name">Ridge</div>
+    <div class="slat__meta">
+      <div><small>One bed · 480 sq ft</small><h3>Ridge</h3></div>
+      <div class="slat__price">from<br>$148,000<div class="slat__arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 12L12 2M5 2h7v7" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></div></div>
+    </div>
+  </a>
+  <a href="#" class="slat" data-i="3">
+    <img src="https://picsum.photos/seed/accordion-four/1200/1600" alt="">
+    <span class="slat__num">N°04</span>
+    <div class="slat__name">Pine</div>
+    <div class="slat__meta">
+      <div><small>One bed + · 620 sq ft</small><h3>Pine</h3></div>
+      <div class="slat__price">from<br>$176,000<div class="slat__arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 12L12 2M5 2h7v7" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></div></div>
+    </div>
+  </a>
+  <a href="#" class="slat" data-i="4">
+    <img src="https://picsum.photos/seed/accordion-five/1200/1600" alt="">
+    <span class="slat__num">N°05</span>
+    <div class="slat__name">Summit</div>
+    <div class="slat__meta">
+      <div><small>Two bed · 840 sq ft</small><h3>Summit</h3></div>
+      <div class="slat__price">from<br>$228,000<div class="slat__arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 12L12 2M5 2h7v7" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></div></div>
+    </div>
+  </a>
+</div>
+
+<script>
+  const accordion = document.getElementById('accordion');
+  const slats = accordion.querySelectorAll('.slat');
+  const ACTIVE = '2.6fr', INACTIVE = '0.8fr';
+  const setCols = (idx) => {
+    accordion.style.setProperty('--accordion-cols',
+      Array.from(slats).map((_, i) => i === idx ? ACTIVE : INACTIVE).join(' ')
+    );
+  };
+  slats.forEach((slat, i) => {
+    slat.addEventListener('mouseenter', () => {
+      slats.forEach(s => s.setAttribute('data-active', 'false'));
+      slat.setAttribute('data-active', 'true');
+      setCols(i);
+    });
+  });
+  accordion.addEventListener('mouseleave', () => {
+    slats.forEach((s, i) => s.setAttribute('data-active', i === 0 ? 'true' : 'false'));
+    setCols(0);
+  });
+</script>
+</body>
+</html>
