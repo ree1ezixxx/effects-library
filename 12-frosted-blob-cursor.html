@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Effect: Frosted Blob Cursor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --cream: #F0EAD2;
+  --tan:   #A98467;
+  --brown: #6C584C;
+}
+
+html, body { overflow-x: hidden; }
+
+body {
+  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  background: var(--cream);
+  color: var(--brown);
+  cursor: none;
+  min-height: 100vh;
+}
+
+a, button { cursor: none; }
+
+/* ── Frosted blob cursor ──────────────────────────
+   The tinted-glass feel comes from three combined
+   properties:
+   1. backdrop-filter: blur()  → samples + blurs bg
+   2. mix-blend-mode: multiply → tints through bg
+   3. translucent fill + faint border → physical edge
+   Lerped follow (0.09 easing) gives it the "liquid"
+   drag. Context classes (shrink / grow) change its
+   size + transparency on hover to indicate state.
+─────────────────────────────────────────────────── */
+#blob {
+  position: fixed;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(108, 88, 76, 0.14);
+  border: 1.5px solid rgba(108, 88, 76, 0.3);
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  mix-blend-mode: multiply;
+  transition:
+    width    0.35s cubic-bezier(0.16,1,0.3,1),
+    height   0.35s cubic-bezier(0.16,1,0.3,1),
+    opacity  0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease;
+  will-change: transform, width, height;
+}
+
+/* Shrink on links/buttons — signals "clickable" without covering target */
+#blob.shrink {
+  width: 10px;
+  height: 10px;
+  background: rgba(108, 88, 76, 0.05);
+  border-color: rgba(108, 88, 76, 0.15);
+}
+
+/* Grow on large text / headlines — reading-lens feel */
+#blob.grow {
+  width: 80px;
+  height: 80px;
+  background: rgba(108, 88, 76, 0.04);
+  border-color: rgba(108, 88, 76, 0.12);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+/* ── Demo layout ──────────────────────────── */
+.stage {
+  min-height: 100vh;
+  padding: 6rem 3rem 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.label {
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tan);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.label::before {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--tan);
+}
+
+h1 {
+  font-size: clamp(3rem, 7vw, 7rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  margin: 2rem 0 3rem;
+  max-width: 18ch;
+}
+
+.hint {
+  font-size: 1rem;
+  line-height: 1.7;
+  max-width: 50ch;
+  color: rgba(108, 88, 76, 0.7);
+  margin-bottom: 4rem;
+}
+
+.card-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 4rem;
+}
+
+.card {
+  aspect-ratio: 4/5;
+  background: var(--brown);
+  color: var(--cream);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  transition: background 0.3s ease;
+}
+
+.card:hover { background: #5a4a40; }
+
+.card h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.card p {
+  font-size: 0.8rem;
+  color: rgba(240, 234, 210, 0.55);
+  margin-top: 0.35rem;
+  letter-spacing: 0.04em;
+}
+
+.nav-row {
+  display: flex;
+  gap: 2rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid rgba(108, 88, 76, 0.2);
+  border-bottom: 1px solid rgba(108, 88, 76, 0.2);
+  margin-bottom: 3rem;
+}
+
+.nav-row a {
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brown);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.footnote {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(108, 88, 76, 0.4);
+}
+</style>
+</head>
+<body>
+
+<div id="blob"></div>
+
+<section class="stage">
+  <div class="label">Effect 12 — Frosted Blob Cursor</div>
+
+  <h1>Move around. Hover the links, cards, and the headline itself.</h1>
+
+  <p class="hint">A lerped cursor with <code>backdrop-filter: blur()</code> and <code>mix-blend-mode: multiply</code> — the body underneath tints through. Context classes shrink it on interactive elements and grow it on display text.</p>
+
+  <nav class="nav-row">
+    <a href="#">Work</a>
+    <a href="#">Materials</a>
+    <a href="#">Journal</a>
+    <a href="#">Contact</a>
+  </nav>
+
+  <div class="card-row">
+    <div class="card"><h3>Rose &amp; Clay</h3><p>Purifying mask</p></div>
+    <div class="card"><h3>Root &amp; Rosehip</h3><p>Botanical serum</p></div>
+    <div class="card"><h3>Hand &amp; Habit</h3><p>Night oil</p></div>
+  </div>
+
+  <div class="footnote">backdrop-filter · mix-blend-mode · lerped follow</div>
+</section>
+
+<script>
+const blob = document.getElementById('blob');
+let mx = 0, my = 0, bx = 0, by = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX;
+  my = e.clientY;
+});
+
+// Shrink on interactive surfaces
+document.querySelectorAll('a, button, .card').forEach(el => {
+  el.addEventListener('mouseenter', () => blob.classList.add('shrink'));
+  el.addEventListener('mouseleave', () => blob.classList.remove('shrink'));
+});
+
+// Grow on display type
+document.querySelectorAll('h1').forEach(el => {
+  el.addEventListener('mouseenter', () => blob.classList.add('grow'));
+  el.addEventListener('mouseleave', () => blob.classList.remove('grow'));
+});
+
+(function tick() {
+  bx += (mx - bx) * 0.09;
+  by += (my - by) * 0.09;
+  blob.style.left = bx + 'px';
+  blob.style.top  = by + 'px';
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
